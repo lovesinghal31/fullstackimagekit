@@ -1,5 +1,5 @@
 import { IVideo, VIDEO_DIMENSIONS } from "@/types/Video";
-import mongoose, { Schema, model, models } from "mongoose";
+import { Schema, model, models } from "mongoose";
 
 const videoSchema = new Schema<IVideo>(
   {
