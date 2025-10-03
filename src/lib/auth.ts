@@ -1,8 +1,16 @@
 import { NextAuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GitHubProvider from "next-auth/providers/github";
 import { dbConnect } from "./dbConnect";
 import UserModel from "@/models/User";
 import bcrypt from "bcryptjs";
+
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error("NEXTAUTH_SECRET is not set");
+}
+if (!process.env.GITHUB_ID || !process.env.GITHUB_SECRET) {
+  throw new Error("GitHub OAuth environment variables are not set");
+}
 
 interface Credentials {
   email: string;
@@ -48,24 +56,28 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    GitHubProvider({
+      clientId: process.env.GITHUB_ID,
+      clientSecret: process.env.GITHUB_SECRET,
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-        if (user) {
-            token.id = user.id;
-        }
-        return token;
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
     },
     async session({ session, token }) {
-        if (token) {
-            session.user.id = token.id as string;
-        }
-        return session;
-    }
+      if (token) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
   },
   pages: {
-    signIn: '/login',
-    error: '/login'
+    signIn: "/login",
+    error: "/login",
   },
   session: {
     strategy: "jwt",
