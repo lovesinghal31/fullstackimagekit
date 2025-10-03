@@ -1,5 +1,5 @@
 import { IVideo, VIDEO_DIMENSIONS } from "@/types/Video";
-import { Schema, model, models } from "mongoose";
+import mongoose, { Schema, model, models } from "mongoose";
 
 const videoSchema = new Schema<IVideo>(
   {
@@ -42,6 +42,8 @@ const videoSchema = new Schema<IVideo>(
   { timestamps: true }
 );
 
-const Video = models?.Video || model<IVideo>("Video", videoSchema);
+const VideoModel =
+  (models?.Video as mongoose.Model<IVideo>) ||
+  model<IVideo>("Video", videoSchema);
 
-export default Video;
+export default VideoModel;
