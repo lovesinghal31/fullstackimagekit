@@ -11,6 +11,7 @@ export interface IVideo {
     description: string;
     videoUrl: string;
     thumbnailUrl: string;
+    fileId?: string; // ImageKit file identifier (optional)
     controls?: boolean;
     transformation?: {
         height: number;

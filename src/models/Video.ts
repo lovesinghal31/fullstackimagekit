@@ -19,6 +19,9 @@ const videoSchema = new Schema<IVideo>(
       type: String,
       required: true,
     },
+    fileId: {
+      type: String,
+    },
     controls: {
       type: Boolean,
       default: true,
