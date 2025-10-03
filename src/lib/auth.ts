@@ -62,6 +62,23 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "github") {
+        await dbConnect();
+        try {
+          const existingUser = await UserModel.findOne({ email: user.email });
+          if (!existingUser) {
+            throw new Error("No user found with the provided email");
+          }
+          user.id = existingUser._id.toString();
+          return true;
+        } catch (error) {
+          console.error("Error during GitHub sign in:", error);
+          return false;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
