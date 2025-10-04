@@ -9,7 +9,6 @@ export async function GET() {
       publicKey: process.env.NEXT_PUBLIC_PUBLIC_KEY as string,
     });
 
-    console.log("Authentication Parameters:", authenticationParameters); // TODO: Remove in production after checking what does this returns and add that to in ApiResponse type
     return NextResponse.json<ApiResponse>(
       {
         success: true,

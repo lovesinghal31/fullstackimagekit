@@ -1,36 +1,164 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+	<h1>Fullstack ImageKit / Video Upload Platform</h1>
+	<p><strong>Next.js 15 (App Router) • NextAuth • ImageKit • Mongoose • Zod • React Hook Form • Axios • Tailwind</strong></p>
+</div>
 
-## Getting Started
+## 🧭 Overview
+This application provides user authentication (credentials + GitHub OAuth), secure server‑side generation of ImageKit upload authentication parameters, immediate (client-side) video upload to ImageKit with progress feedback, and persistent storage of video metadata (title, description, URLs) in MongoDB. A hosted upload pattern ("Pattern A") is implemented: the file is uploaded first; the form then submits only metadata + the hosted URL.
 
-First, run the development server:
+## ✨ Key Features
+- User registration & login (NextAuth credentials + GitHub OAuth)
+- JWT session strategy with user `id` injected into `session.user`
+- Protected video creation endpoint (`/api/videos`)
+- Immediate client-side upload through ImageKit (`FileUpload` component) with progress tracking
+- Validation via Zod (form + hosted schema) and react-hook-form resolvers
+- MongoDB persistence with Mongoose models (`User`, `Video`)
+- Toast notifications (Sonner) & custom notification provider
+- Centralized Axios API client (`api-client.ts`)
+- Environment-driven configuration with graceful runtime checks
+- Modular UI components (Buttons, Inputs, Dialog, etc.) based on shadcn/ui style
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🏗️ Architecture
+| Layer | Responsibility | Notable Files |
+|-------|----------------|---------------|
+| Auth | Session, providers, callbacks | `src/lib/auth.ts`, `src/types/next-auth.d.ts` |
+| Data | DB connection & models | `src/lib/dbConnect.ts`, `src/models/User.ts`, `src/models/Video.ts` |
+| API | RESTful routes | `src/app/api/auth/*`, `src/app/api/videos/route.ts`, `src/app/api/imagekit-auth/route.ts` |
+| Upload | ImageKit integration | `src/components/FileUpload.tsx`, `src/app/api/imagekit-auth/route.ts` |
+| Forms | Validation & handling | `src/schemas/*`, `VideoUploadForm.tsx` |
+| UI | Reusable components | `src/components/ui/*` |
+
+### Upload Flow (Pattern A)
+1. User selects a video in `FileUpload`.
+2. Component requests auth params from `/api/imagekit-auth` (server-side, uses private key).
+3. ImageKit `upload()` runs in the browser → returns `fileId`, `url`, metadata.
+4. Form stores `videoUrl` + `fileId` (Zod: `videoUploadHostedSchema`).
+5. User completes title & description and submits.
+6. Backend `/api/videos` validates required metadata and persists the document.
+
+## 🗂️ Folder Structure (excerpt)
+```
+src/
+	app/
+		api/
+			auth/...           # NextAuth credential + register endpoints
+			imagekit-auth/     # GET: ImageKit upload auth params
+			videos/            # GET/POST video metadata
+		login/               # Login page (credentials + GitHub)
+		register/            # Registration page
+		profile/             # Displays session user id/email
+	components/
+		FileUpload.tsx       # Immediate ImageKit uploader
+		VideoUploadForm.tsx  # Pattern A form
+		ui/                  # Reusable primitives
+	context/
+		AuthProvider.tsx     # Session + ImageKit + Notifications
+	lib/
+		auth.ts              # NextAuth options
+		api-client.ts        # Axios wrapper
+		dbConnect.ts         # Mongoose connection caching
+	models/                # Mongoose models (User, Video)
+	schemas/               # Zod schemas (login, register, video upload)
+	types/                 # Shared TypeScript types
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🔐 Environment Variables
+Create a `.env.local` with the following (example names—adjust as necessary):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+NEXTAUTH_SECRET=your_long_random_secret
+GITHUB_ID=your_github_oauth_client_id
+GITHUB_SECRET=your_github_oauth_client_secret
+MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net
+DB_NAME=fullstack_imagekit
+IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key
+NEXT_PUBLIC_PUBLIC_KEY=your_imagekit_public_key
+NEXT_PUBLIC_URL_ENDPOINT=https://ik.imagekit.io/your_endpoint
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All variables prefixed with `NEXT_PUBLIC_` are exposed to the client; keep private keys server-only.
 
-## Learn More
+## 🚀 Getting Started
+Install dependencies and run the dev server:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm install
+npm run dev
+# http://localhost:3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🧪 Validation & Types
+- Zod schemas in `src/schemas/`
+	- `videoUploadSchema` (raw File client validation – legacy / optional)
+	- `videoUploadHostedSchema` (Pattern A – validates `videoUrl`, `fileId`)
+- Type augmentation for NextAuth in `src/types/next-auth.d.ts` ensures `session.user.id` exists.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📡 API Endpoints (Summary)
+| Method | Route | Purpose | Auth |
+|--------|-------|---------|------|
+| POST | `/api/auth/register` | Create user | Public |
+| GET/POST | `/api/auth/[...nextauth]` | NextAuth (credentials, GitHub) | Mixed |
+| GET | `/api/imagekit-auth` | Get upload auth params (signature) | Server only (no session required) |
+| GET | `/api/videos` | List videos (sorted newest first) | Public (could restrict later) |
+| POST | `/api/videos` | Persist uploaded video metadata | Requires session |
 
-## Deploy on Vercel
+## 🧰 Important Components
+### `FileUpload`
+Props: `onSuccess`, `onProgress?`, `fileType?="image" | "video"`.
+Returns an `ImageKitUploadResponse` with `fileId`, `url`, size & basic metadata.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### `VideoUploadForm`
+Uses `videoUploadHostedSchema` + `FileUpload` to send metadata after successful client upload.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🗄️ Data Model (Video)
+```ts
+interface IVideo {
+	title: string;
+	description: string;
+	videoUrl: string;
+	thumbnailUrl: string;
+	fileId?: string; // ImageKit identifier
+	controls?: boolean; // default true
+	transformation?: { height: number; width: number; quality?: number };
+	createdAt?: Date; updatedAt?: Date;
+}
+```
+
+## 🔄 Session & Auth
+- JWT strategy; user `id` stored on token then merged into session.
+- Credentials login: bcrypt password compare.
+- GitHub OAuth provider for quick social login.
+
+## 🧩 Axios API Client
+`src/lib/api-client.ts` centralizes requests with error normalization; `createVideo()` and `getVideos()` wrappers are available.
+
+## 🛡️ Error Handling & Notifications
+- Toasts via Sonner (`<Toaster />` in root layout) with dismiss actions.
+- Upload errors categorized (abort, invalid request, server, network).
+
+## 🧱 Styling
+- Tailwind CSS + shadcn-inspired UI components.
+- Geist font via `next/font`.
+
+## 🔮 Future Improvements
+- Generate dynamic thumbnails (ImageKit transformation query params)
+- Add pagination / infinite scroll to video feed
+- Role-based access control (admin moderation)
+- Rate limiting for API endpoints
+- Add optimistic UI & retry for uploads
+- Server-side video processing hooks (webhooks from ImageKit)
+- Dark/light theme toggle (themes provider present but can be enhanced)
+
+## ✅ Checklist for New Environment
+1. Populate `.env.local` with all variables
+2. Ensure MongoDB connectivity
+3. Create ImageKit account & keys (private + public + URL endpoint)
+4. Set `NEXTAUTH_SECRET` (can be generated with `openssl rand -base64 32`)
+5. Start dev server and register a test user
+6. Upload a sample video to verify `/api/imagekit-auth` and `/api/videos`
+
+## 📜 License
+MIT (add a LICENSE file if distributing publicly)
+
+---
+Feel free to open issues or extend the stack with additional media features. Happy hacking! 🎥
