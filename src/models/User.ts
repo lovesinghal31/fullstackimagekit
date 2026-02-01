@@ -11,14 +11,14 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      // required: true,
     },
   },
   { timestamps: true }
 );
 
 userSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
+  if (this.isModified("password") && this.password) {
     this.password = await bcrypt.hash(this.password, 10);
   }
   next();

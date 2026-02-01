@@ -54,6 +54,7 @@ const FileUpload = ({ onSuccess, onProgress, fileType }: FileUploadProps) => {
     setError(null);
     try {
       const response = await axios.get("/api/imagekit-auth");
+      console.log("response",response)
       const uploadResponse = await upload({
         file,
         fileName: file.name,
@@ -68,6 +69,7 @@ const FileUpload = ({ onSuccess, onProgress, fileType }: FileUploadProps) => {
             }
         },
       });
+      // console.log("Upload Response: ",uploadResponse)
       onSuccess({
         fileId: uploadResponse.fileId,
         url: uploadResponse.url,
